@@ -7,6 +7,7 @@ Bu submission, Nokta vizyonunun **Track A** dilimini mobilde minimum surtunmeyle
 1. Kullanici **ham fikrini** metin olarak girer.
 2. Uygulama **engineering-guided** 4 soru ile fikri netlestirir.
 3. Sonucta **tek sayfa spec** metni uretilir.
+4. Isteg bagli olarak **insan uzman inceleme talebi** alinir ve spec metnine **HITL kaydi** olarak eklenir.
 
 ## Problem
 
@@ -27,12 +28,18 @@ Tek akista kullaniciyi zorunlu sorulara surukleyerek fikri "uretilebilir" bir fo
 - 4 engineering sorusu
 - Soru bazli secilebilir oneri chipleri (hizli doldurma)
 - Tek sayfa spec ciktisi
+- Uzman inceleme talebi (iletisim + not) ve spec'e isleme
 
 ## Non-goals (ne yok)
 
 - Ses kaydi / STT
 - Harici LLM API cagrilari
 - Sosyal medya scraping, dedup, marketplace
+- Gercek zamanli video gorusme, mentor kuyruk backend'i, Stream/WebRTC entegrasyonu
+
+## Referans
+
+- Insan devri (HITL) kurgusu icin `nokta-hoop` README'sindeki mentor/escalation akisi referans alinmistir: https://github.com/seyyah/nokta-hoop
 
 ## Engineering sorulari (sabit set)
 

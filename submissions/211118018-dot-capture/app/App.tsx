@@ -185,12 +185,18 @@ const polishConstraints = (raw: string) => {
   return `${raw.trim()}\n\nRisk notu: Kapsam genişlerse teslim tarihi ve test kapsamı risk altına girer; MVP bilinçli biçimde dar tutulur.`;
 };
 
+type HumanReviewState =
+  | { status: "NONE" }
+  | { status: "REQUESTED"; contact: string; note: string; requestedAtIso: string }
+  | { status: "SKIPPED" };
+
 const buildSpec = (params: {
   ideaText: string;
   problem: string;
   targetUser: string;
   mvpScope: string;
   constraints: string;
+  humanReview: HumanReviewState;
 }) => {
   const problemOut = shouldPolish(params.problem)
     ? polishProblem(params.problem, params.ideaText)
@@ -203,6 +209,26 @@ const buildSpec = (params: {
   const constraintsOut = shouldPolish(params.constraints)
     ? polishConstraints(params.constraints)
     : params.constraints.trim();
+
+  const humanReviewBlock =
+    params.humanReview.status === "REQUESTED"
+      ? `
+
+İnsan Uzman İncelemesi (HITL - talep)
+Durum: REQUESTED
+İletişim: ${params.humanReview.contact.trim()}
+Not: ${params.humanReview.note.trim()}
+Talep zamanı (ISO): ${params.humanReview.requestedAtIso}
+Açıklama: Bu MVP'de gerçek zamanlı görüşme yoktur; talep kaydı spec içine işlenir ve mentor iletişim bilgisi üzerinden döner.
+`
+      : params.humanReview.status === "SKIPPED"
+        ? `
+
+İnsan Uzman İncelemesi (HITL)
+Durum: SKIPPED
+Açıklama: Kullanıcı bu teslimde uzman incelemesi talep etmedi.
+`
+        : "";
 
   return `## One-Page Spec
 
@@ -232,7 +258,7 @@ Varsayımlar
 MVP Dışı Kapsam
 - Kurumsal SSO ve okul ERP entegrasyonu
 - Gelişmiş dolandırıcılık tespiti ve cihaz parmak izi gibi güvenlik ürünleri
-`;
+${humanReviewBlock}`;
 };
 
 function SuggestionChips({
@@ -259,12 +285,15 @@ function SuggestionChips({
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<"idea" | "questions" | "spec">("idea");
+  const [screen, setScreen] = useState<"idea" | "questions" | "spec" | "mentor">("idea");
   const [ideaText, setIdeaText] = useState("");
   const [problem, setProblem] = useState("");
   const [targetUser, setTargetUser] = useState("");
   const [mvpScope, setMvpScope] = useState("");
   const [constraints, setConstraints] = useState("");
+  const [mentorContact, setMentorContact] = useState("");
+  const [mentorNote, setMentorNote] = useState("");
+  const [humanReview, setHumanReview] = useState<HumanReviewState>({ status: "NONE" });
 
   const statusBarOffset = Platform.OS === "android" ? RNStatusBar.currentHeight ?? 0 : 0;
   const heroTopPadding = 10 + statusBarOffset;
@@ -276,6 +305,7 @@ export default function App() {
     targetUser,
     mvpScope,
     constraints,
+    humanReview,
   });
 
   const handleBack = () => {
@@ -285,6 +315,10 @@ export default function App() {
     }
     if (screen === "spec") {
       setScreen("questions");
+      return;
+    }
+    if (screen === "mentor") {
+      setScreen("spec");
     }
   };
 
@@ -309,6 +343,26 @@ export default function App() {
     setScreen("spec");
   };
 
+  const handleSubmitMentorRequest = () => {
+    if (!mentorContact.trim() || !mentorNote.trim()) {
+      Alert.alert("Eksik bilgi", "Lütfen iletişim bilgisi ve kısa notu doldur.");
+      return;
+    }
+    setHumanReview({
+      status: "REQUESTED",
+      contact: mentorContact.trim(),
+      note: mentorNote.trim(),
+      requestedAtIso: new Date().toISOString(),
+    });
+    Alert.alert("Talep oluşturuldu", "Özet metnine insan uzman incelemesi bölümü eklendi.");
+    setScreen("spec");
+  };
+
+  const handleSkipMentor = () => {
+    setHumanReview({ status: "SKIPPED" });
+    setScreen("spec");
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={[styles.hero, { paddingTop: heroTopPadding }]}>
@@ -328,7 +382,7 @@ export default function App() {
 
         <Text style={styles.title}>Dot Capture</Text>
         <Text style={styles.subtitle}>
-          Metin tabanlı teslim modu: ham fikir → mühendislik soruları → tek sayfa ürün özeti.
+          Metin tabanlı teslim modu: ham fikir → mühendislik soruları → tek sayfa özet → isteğe bağlı uzman incelemesi.
         </Text>
       </View>
 
@@ -453,14 +507,101 @@ export default function App() {
             <View style={styles.specBox}>
               <Text style={styles.specText}>{generatedSpec}</Text>
             </View>
+            {humanReview.status === "NONE" ? (
+              <TouchableOpacity style={styles.button} onPress={() => setScreen("mentor")} activeOpacity={0.9}>
+                <Text style={styles.buttonText}>Uzman incelemesi (isteğe bağlı)</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ gap: 8 }}>
+                <Text style={styles.helperText}>
+                  İnsan uzman talebi bu oturum için işlendi. Özeti güncellemek için sıfırlayıp yeniden ekleyebilirsin.
+                </Text>
+                <TouchableOpacity
+                  style={styles.ghostButton}
+                  onPress={() => {
+                    setHumanReview({ status: "NONE" });
+                    setMentorContact("");
+                    setMentorNote("");
+                  }}
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.ghostButtonText}>Uzman bölümünü sıfırla</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             <View style={styles.footerActions}>
               <TouchableOpacity style={styles.secondaryButton} onPress={() => setScreen("questions")} activeOpacity={0.9}>
                 <Text style={styles.secondaryButtonText}>Geri</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryButtonFlex} onPress={() => setScreen("idea")} activeOpacity={0.9}>
+              <TouchableOpacity
+                style={styles.primaryButtonFlex}
+                onPress={() => {
+                  setIdeaText("");
+                  setProblem("");
+                  setTargetUser("");
+                  setMvpScope("");
+                  setConstraints("");
+                  setMentorContact("");
+                  setMentorNote("");
+                  setHumanReview({ status: "NONE" });
+                  setScreen("idea");
+                }}
+                activeOpacity={0.9}
+              >
                 <Text style={styles.buttonText}>Yeni fikir</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        )}
+
+        {screen === "mentor" && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>4) Uzman incelemesi (HITL)</Text>
+            <Text style={styles.helperText}>
+              Bu adım gerçek bir video görüşme içermez. İletişim bilgini bırak; özet metnine talep kaydı eklenir.
+            </Text>
+
+            <Text style={styles.label}>İletişim (e-posta veya telefon)</Text>
+            <TextInput
+              style={styles.inputSmall}
+              value={mentorContact}
+              onChangeText={setMentorContact}
+              placeholder="ornek@edu.tr veya +90..."
+              autoCorrect={false}
+              spellCheck={false}
+              autoComplete="off"
+              textContentType="none"
+              importantForAutofill="no"
+            />
+
+            <Text style={styles.label}>Mentora not (max 2-3 cümle)</Text>
+            <TextInput
+              style={styles.input}
+              multiline
+              numberOfLines={5}
+              value={mentorNote}
+              onChangeText={setMentorNote}
+              placeholder="Hangi riskler, hangi varsayımlar, hangi kararlar net değil?"
+              textAlignVertical="top"
+              autoCorrect={false}
+              spellCheck={false}
+              autoComplete="off"
+              textContentType="none"
+              importantForAutofill="no"
+            />
+
+            <View style={styles.footerActions}>
+              <TouchableOpacity style={styles.secondaryButton} onPress={() => setScreen("spec")} activeOpacity={0.9}>
+                <Text style={styles.secondaryButtonText}>Vazgeç</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.primaryButtonFlex} onPress={handleSubmitMentorRequest} activeOpacity={0.9}>
+                <Text style={styles.buttonText}>Talebi kaydet</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.ghostButton} onPress={handleSkipMentor} activeOpacity={0.9}>
+              <Text style={styles.ghostButtonText}>Uzman istemiyorum</Text>
+            </TouchableOpacity>
           </View>
         )}
         </ScrollView>
@@ -681,5 +822,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#3b82f6",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.10)",
+  },
+  ghostButton: {
+    marginTop: 4,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.10)",
+    backgroundColor: "transparent",
+  },
+  ghostButtonText: {
+    color: "rgba(255,255,255,0.72)",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

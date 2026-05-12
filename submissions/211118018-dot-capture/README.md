@@ -5,6 +5,12 @@
 - **Track A — Dot Capture & Enrich**
 - **Text-only**: Ham fikir sadece metin olarak alinir.
 - **Offline deterministic mode**: Harici AI API entegrasyonu yoktur. Engineering sorulari sabit bir soru seti ile yonetilir ve tek sayfa spec uretilir.
+- **Human-in-the-loop (HITL) - basit MVP**: Tek sayfa ozetten sonra istege bagli **uzman inceleme talebi** (iletisim + not) alinir ve spec metnine eklenir. Gercek zamanli goruntulu gorusme yoktur.
+
+## Referans repo secimi (hocanin ek reposu)
+
+- Bu gelistirme, `nokta-hoop` fikrindeki **mentor/escalation (insan devri)** yaklasimindan ilham alarak **basitlestirilmis** uygulanmistir: [seyyah/nokta-hoop](https://github.com/seyyah/nokta-hoop)
+- `nokta-mascot` (web tabanli mascot) bu teslimde zorunlu entegrasyon olarak secilmedi: [seyyah/nokta-mascot](https://github.com/seyyah/nokta-mascot)
 
 ## Expo (QR / link)
 
@@ -33,6 +39,7 @@ Not: Okul aginda LAN sorunlari olursa `npx expo start --tunnel` deneyebilirsin.
 - Dosya: `submissions/211118018-dot-capture/app-release.apk`
 - Android release APK uretildi ve submission klasorune eklendi.
 - Not: Windows uzun yol limitleri nedeniyle release build, kisa bir calisma dizininde (`D:\\dc`) alindi; kaynak kod `app/` klasorunde kalir.
+- Guncelleme: HITL (uzman talebi) UI degisikliklerinden sonra APK yeniden uretilip ayni dosya adiyla guncellendi.
 
 ## Decision log
 
@@ -46,6 +53,8 @@ Not: Okul aginda LAN sorunlari olursa `npx expo start --tunnel` deneyebilirsin.
 8. Geri navigasyon, status bar uyumu ve klavye responsive davranisi (android resize + keyboard avoiding) duzenlendi.
 9. Android release APK Gradle ile uretildi; Windows uzun yol sorunlari icin `newArchEnabled` kapatildi ve build kisa dizinde alindi.
 10. APK `submissions/211118018-dot-capture/app-release.apk` olarak submission kokune kondu.
+11. Hoca guncellemesi: **insan uzman destegi** icin basit HITL talep akisi eklendi; iletisim + not spec'e yazilir (backend/video yok).
+12. Referans olarak `nokta-hoop` mentor/escalation kurgusu secildi; kapsam bilincli dar tutuldu.
 
 ## AI araclari (gelistirme)
 
